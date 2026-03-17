@@ -1,0 +1,81 @@
+# Contas a Pagar — PWA com Firebase
+
+App de gestão de contas a pagar com sincronização em tempo real entre dispositivos.
+
+════════════════════════════════════════
+PASSO 1 — CRIAR O PROJETO NO FIREBASE
+════════════════════════════════════════
+
+1. Acesse https://console.firebase.google.com com seu Gmail
+2. Clique em "Criar projeto"
+3. Dê um nome (ex: "contas-empresa") e clique em Continuar
+4. Pode desativar o Google Analytics → Criar projeto
+
+────────────────────────────────────────
+PASSO 2 — ATIVAR O BANCO DE DADOS
+────────────────────────────────────────
+
+1. No menu lateral, clique em "Realtime Database"
+2. Clique em "Criar banco de dados"
+3. Escolha a região (pode deixar padrão)
+4. Selecione "Iniciar no modo de teste" → Avançar → Concluir
+
+────────────────────────────────────────
+PASSO 3 — REGISTRAR O APP WEB
+────────────────────────────────────────
+
+1. Na tela inicial do projeto, clique no ícone </> (Web)
+2. Dê um apelido (ex: "contas-web") → Registrar app
+3. Vai aparecer um bloco com as configurações.
+   Copie esses 4 valores:
+   - apiKey
+   - authDomain
+   - databaseURL
+   - projectId
+
+════════════════════════════════════════
+PASSO 4 — PUBLICAR NO GITHUB PAGES
+════════════════════════════════════════
+
+1. Acesse https://github.com e crie uma conta gratuita
+2. Crie um repositório público chamado "contas-app"
+3. Faça upload de TODOS os arquivos desta pasta
+4. Vá em Settings → Pages → Branch: main → Save
+5. Aguarde ~1 min. O app estará em:
+   https://SEU_USUARIO.github.io/contas-app
+
+════════════════════════════════════════
+PASSO 5 — CONECTAR O FIREBASE NO APP
+════════════════════════════════════════
+
+1. Abra o link do seu app no navegador
+2. Vai aparecer a tela de configuração do Firebase
+3. Cole os 4 valores copiados no Passo 3
+4. Clique em "Salvar e conectar"
+
+Pronto! O indicador no topo ficará verde "online · sincronizado".
+Você e sua esposa acessam o mesmo link e as contas aparecem
+para os dois em tempo real.
+
+Para reconfigurar clique no ícone ⚙ no canto superior esquerdo.
+
+════════════════════════════════════════
+INSTALAR COMO APP
+════════════════════════════════════════
+
+Windows (Chrome ou Edge):
+→ Ícone de instalar na barra de endereço → Instalar
+
+Android (Chrome):
+→ Menu (3 pontos) → "Adicionar à tela inicial"
+
+iPhone/iPad (Safari):
+→ Botão Compartilhar → "Adicionar à Tela de Início"
+
+════════════════════════════════════════
+INDICADOR DE STATUS (canto superior)
+════════════════════════════════════════
+
+🟢 online · sincronizado  → tudo certo
+🟡 offline · dados locais → sem internet, sincroniza ao voltar
+🔵 sincronizando...       → enviando/recebendo dados
