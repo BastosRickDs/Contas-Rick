@@ -13,6 +13,7 @@
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -211,9 +212,41 @@
     .cfg-save:disabled{opacity:.5;cursor:not-allowed;transform:none}
     .cfg-reset{font-family:var(--mono);font-size:10px;color:var(--text-dim);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:10px;display:block;text-align:center}
     .cfg-reset:hover{color:var(--red)}
+
+    /* LOGIN SCREEN */
+    .login-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+    .login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 28px;max-width:380px;width:100%;text-align:center}
+    .login-logo{font-size:36px;margin-bottom:16px}
+    .login-title{font-size:22px;font-weight:700;margin-bottom:8px}
+    .login-sub{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:28px;line-height:1.7}
+    .google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 20px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-family:var(--display);font-size:14px;font-weight:600;color:var(--text);transition:all .15s}
+    .google-btn:hover{border-color:var(--accent);background:var(--accent-dim);transform:translateY(-1px)}
+    .google-btn:active{transform:translateY(0)}
+    .google-icon{width:20px;height:20px;flex-shrink:0}
+    .login-loading{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:16px}
+    /* USER BADGE */
+    .user-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text-muted)}
+    .user-avatar{width:22px;height:22px;border-radius:50%;border:1px solid var(--border)}
+    .logout-btn{background:none;border:none;cursor:pointer;color:var(--text-dim);font-family:var(--mono);font-size:10px;text-decoration:underline;padding:0}
+    .logout-btn:hover{color:var(--red)}
   </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">💰</div>
+    <div class="login-title">Contas a Pagar</div>
+    <div class="login-sub">Acesso restrito.<br>Entre com sua conta Google para continuar.</div>
+    <button class="google-btn" onclick="loginGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Entrar com Google
+    </button>
+    <div class="login-loading" id="loginMsg"></div>
+  </div>
+</div>
+
 
 <!-- CONFIG OVERLAY -->
 <div id="cfgOverlay" class="cfg-overlay" style="display:none">
@@ -245,6 +278,11 @@
   <div style="display:flex;align-items:center;gap:10px">
     <span class="topbar-title">Contas</span>
     <button class="icon-btn" onclick="document.getElementById('cfgOverlay').style.display='flex'" title="Configurações Firebase" style="font-size:13px">⚙</button>
+  </div>
+  <div class="user-badge" id="userBadge" style="display:none">
+    <img class="user-avatar" id="userAvatar" src="" alt="" />
+    <span id="userName"></span>
+    <button class="logout-btn" onclick="logoutUser()">sair</button>
   </div>
   <div class="week-nav" id="weekNavWrap">
     <button class="icon-btn" onclick="changeWeek(-1)">&#8592;</button>
@@ -381,6 +419,38 @@ let weekOffset=0, monthOffset=0, yearOffset=0, activeTab='semana';
 let bills = [], paidRec = {}, categories = [];
 let db = null, fbReady = false;
 
+
+// ── AUTH ──
+let currentUser = null;
+
+function loginGoogle() {
+  document.getElementById('loginMsg').textContent = 'Abrindo login...';
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider).catch(err => {
+    document.getElementById('loginMsg').textContent = 'Erro: ' + err.message;
+  });
+}
+
+function logoutUser() {
+  if (confirm('Deseja sair?')) firebase.auth().signOut();
+}
+
+function initAuth() {
+  firebase.auth().onAuthStateChanged(user => {
+    currentUser = user;
+    if (user) {
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('userBadge').style.display = 'flex';
+      document.getElementById('userAvatar').src = user.photoURL || '';
+      document.getElementById('userName').textContent = user.displayName?.split(' ')[0] || user.email;
+    } else {
+      document.getElementById('loginOverlay').style.display = 'flex';
+      document.getElementById('userBadge').style.display = 'none';
+      document.getElementById('loginMsg').textContent = '';
+    }
+  });
+}
+
 // ── FIREBASE CONFIG ──
 const FB_CONFIG_KEY = 'fb_config_v1';
 
@@ -446,6 +516,7 @@ function initFirebase(cfg) {
     });
 
     fbReady = true;
+    initAuth();
   } catch(e) {
     setSyncStatus('error', 'erro de configuração');
     console.error(e);
