@@ -443,11 +443,42 @@ function initAuth() {
       document.getElementById('userBadge').style.display = 'flex';
       document.getElementById('userAvatar').src = user.photoURL || '';
       document.getElementById('userName').textContent = user.displayName?.split(' ')[0] || user.email;
+      // Only start listening to DB after user is confirmed logged in
+      startDbListeners();
     } else {
       document.getElementById('loginOverlay').style.display = 'flex';
       document.getElementById('userBadge').style.display = 'none';
       document.getElementById('loginMsg').textContent = '';
+      setSyncStatus('offline', 'não autenticado');
     }
+  });
+}
+
+function startDbListeners() {
+  setSyncStatus('syncing', 'sincronizando...');
+
+  db.ref('bills').on('value', snap => {
+    bills = snap.val() ? Object.values(snap.val()) : [];
+    render();
+    if (activeTab === 'mes') renderMonth();
+    if (activeTab === 'ano') renderYear();
+    setSyncStatus('online', 'sincronizado');
+  }, () => setSyncStatus('error', 'erro ao carregar'));
+
+  db.ref('paidRec').on('value', snap => {
+    paidRec = snap.val() || {};
+    render();
+  });
+
+  db.ref('categories').on('value', snap => {
+    categories = snap.val() ? Object.values(snap.val()) : [];
+    updateAllCatSelects();
+    if (activeTab === 'categorias') renderCategorias();
+  });
+
+  db.ref('.info/connected').on('value', snap => {
+    if (snap.val()) setSyncStatus('online', 'online · sincronizado');
+    else setSyncStatus('offline', 'offline · dados locais');
   });
 }
 
@@ -486,35 +517,6 @@ function initFirebase(cfg) {
   try {
     const app = firebase.initializeApp(cfg);
     db = firebase.database();
-    setSyncStatus('syncing', 'sincronizando...');
-
-    // Listen bills
-    db.ref('bills').on('value', snap => {
-      bills = snap.val() ? Object.values(snap.val()) : [];
-      render();
-      if (activeTab === 'mes') renderMonth();
-      if (activeTab === 'ano') renderYear();
-      setSyncStatus('online', 'sincronizado');
-    }, () => setSyncStatus('error', 'erro ao carregar'));
-
-    // Listen paidRec
-    db.ref('paidRec').on('value', snap => {
-      paidRec = snap.val() || {};
-      render();
-    });
-
-    // Listen categories
-    db.ref('categories').on('value', snap => {
-      categories = snap.val() ? Object.values(snap.val()) : [];
-      updateAllCatSelects();
-      if (activeTab === 'categorias') renderCategorias();
-    });
-
-    db.ref('.info/connected').on('value', snap => {
-      if (snap.val()) setSyncStatus('online', 'online · sincronizado');
-      else setSyncStatus('offline', 'offline · dados locais');
-    });
-
     fbReady = true;
     initAuth();
   } catch(e) {
