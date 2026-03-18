@@ -229,6 +229,16 @@
     .user-avatar{width:22px;height:22px;border-radius:50%;border:1px solid var(--border)}
     .logout-btn{background:none;border:none;cursor:pointer;color:var(--text-dim);font-family:var(--mono);font-size:10px;text-decoration:underline;padding:0}
     .logout-btn:hover{color:var(--red)}
+
+    /* ACCESS DENIED */
+    .denied-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+    .denied-card{background:var(--surface);border:1px solid var(--red);border-radius:16px;padding:36px 28px;max-width:380px;width:100%;text-align:center}
+    .denied-icon{font-size:36px;margin-bottom:16px}
+    .denied-title{font-size:20px;font-weight:700;margin-bottom:8px;color:var(--red)}
+    .denied-sub{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:24px;line-height:1.8}
+    .denied-email{font-family:var(--mono);font-size:12px;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;margin-bottom:20px;word-break:break-all}
+    .denied-btn{padding:10px 20px;border-radius:var(--radius);background:none;border:1px solid var(--border);cursor:pointer;font-family:var(--display);font-size:12px;font-weight:600;color:var(--text-muted);transition:all .15s}
+    .denied-btn:hover{border-color:var(--red);color:var(--red)}
   </style>
 </head>
 <body>
@@ -244,6 +254,18 @@
       Entrar com Google
     </button>
     <div class="login-loading" id="loginMsg"></div>
+  </div>
+</div>
+
+
+<!-- ACCESS DENIED OVERLAY -->
+<div id="deniedOverlay" class="denied-overlay" style="display:none">
+  <div class="denied-card">
+    <div class="denied-icon">🔒</div>
+    <div class="denied-title">Acesso negado</div>
+    <div class="denied-sub">Este e-mail não tem permissão para acessar o app.<br>Entre em contato com o administrador.</div>
+    <div class="denied-email" id="deniedEmail"></div>
+    <button class="denied-btn" onclick="logoutUser()">Sair e tentar outro e-mail</button>
   </div>
 </div>
 
@@ -423,11 +445,36 @@ let db = null, fbReady = false;
 // ── AUTH ──
 let currentUser = null;
 
+const ALLOWED_EMAILS = [
+  'fiancaagrocao@gmail.com',
+  'sarahcavalcanti81@gmail.com',
+  'luishb.1991@gmail.com',
+  'bastosrick.ds@gmail.com'
+];
+
+
+const ALLOWED_EMAILS = [
+  'fiancaagrocao@gmail.com',
+  'sarahcavalcanti81@gmail.com',
+  'luishb.1991@gmail.com',
+  'bastosrick.ds@gmail.com'
+];
+
 function loginGoogle() {
   document.getElementById('loginMsg').textContent = 'Abrindo login...';
+  document.getElementById('loginDenied').style.display = 'none';
   const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
   firebase.auth().signInWithPopup(provider).catch(err => {
     document.getElementById('loginMsg').textContent = 'Erro: ' + err.message;
+  });
+}
+
+function trySwitchAccount() {
+  firebase.auth().signOut().then(() => {
+    document.getElementById('loginDenied').style.display = 'none';
+    document.getElementById('loginBtnWrap').style.display = 'block';
+    loginGoogle();
   });
 }
 
@@ -435,20 +482,36 @@ function logoutUser() {
   if (confirm('Deseja sair?')) firebase.auth().signOut();
 }
 
+const EMAILS_AUTORIZADOS = [
+  'fiancaagrocao@gmail.com',
+  'sarahcavalcanti81@gmail.com',
+  'luishb.1991@gmail.com',
+  'bastosrick.ds@gmail.com'
+];
+
 function initAuth() {
   firebase.auth().onAuthStateChanged(user => {
     currentUser = user;
     if (user) {
+      if (!EMAILS_AUTORIZADOS.includes(user.email.toLowerCase())) {
+        // Email not authorized — sign out and show error
+        firebase.auth().signOut();
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('loginMsg').textContent = '⚠ Acesso negado: ' + user.email;
+        document.getElementById('loginMsg').style.color = 'var(--red)';
+        setSyncStatus('offline', 'acesso negado');
+        return;
+      }
       document.getElementById('loginOverlay').style.display = 'none';
       document.getElementById('userBadge').style.display = 'flex';
       document.getElementById('userAvatar').src = user.photoURL || '';
       document.getElementById('userName').textContent = user.displayName?.split(' ')[0] || user.email;
-      // Only start listening to DB after user is confirmed logged in
+      document.getElementById('loginMsg').textContent = '';
+      document.getElementById('loginMsg').style.color = '';
       startDbListeners();
     } else {
       document.getElementById('loginOverlay').style.display = 'flex';
       document.getElementById('userBadge').style.display = 'none';
-      document.getElementById('loginMsg').textContent = '';
       setSyncStatus('offline', 'não autenticado');
     }
   });
