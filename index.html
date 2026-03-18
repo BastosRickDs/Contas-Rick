@@ -461,11 +461,11 @@ const ALLOWED_EMAILS = [
 ];
 
 function loginGoogle() {
-  document.getElementById('loginMsg').textContent = 'Abrindo login...';
+  document.getElementById('loginMsg').textContent = 'Redirecionando para o Google...';
   document.getElementById('loginDenied').style.display = 'none';
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  firebase.auth().signInWithPopup(provider).catch(err => {
+  firebase.auth().signInWithRedirect(provider).catch(err => {
     document.getElementById('loginMsg').textContent = 'Erro: ' + err.message;
   });
 }
@@ -490,6 +490,13 @@ const EMAILS_AUTORIZADOS = [
 ];
 
 function initAuth() {
+  // Handle redirect result first
+  firebase.auth().getRedirectResult().catch(err => {
+    console.error('Redirect error:', err);
+    const msg = document.getElementById('loginMsg');
+    if (msg) msg.textContent = 'Erro no login: ' + err.message;
+  });
+
   firebase.auth().onAuthStateChanged(user => {
     currentUser = user;
     if (user) {
