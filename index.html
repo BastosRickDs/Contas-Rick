@@ -222,6 +222,7 @@
     .google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 20px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-family:var(--display);font-size:14px;font-weight:600;color:var(--text);transition:all .15s}
     .google-btn:hover{border-color:var(--accent);background:var(--accent-dim);transform:translateY(-1px)}
     .google-btn:active{transform:translateY(0)}
+    .google-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
     .google-icon{width:20px;height:20px;flex-shrink:0}
     .login-loading{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:16px}
     /* USER BADGE */
@@ -461,13 +462,25 @@ const ALLOWED_EMAILS = [
 ];
 
 function loginGoogle() {
-  document.getElementById('loginMsg').textContent = 'Redirecionando para o Google...';
-  document.getElementById('loginDenied').style.display = 'none';
+  const msg = document.getElementById('loginMsg');
+  const btn = document.querySelector('.google-btn');
+  msg.textContent = 'Conectando...';
+  if (btn) btn.disabled = true;
+
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  firebase.auth().signInWithRedirect(provider).catch(err => {
-    document.getElementById('loginMsg').textContent = 'Erro: ' + err.message;
-  });
+
+  firebase.auth().signInWithPopup(provider)
+    .then(() => { msg.textContent = ''; })
+    .catch(err => {
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+        msg.textContent = 'Redirecionando...';
+        firebase.auth().signInWithRedirect(provider);
+      } else {
+        msg.textContent = 'Erro: ' + (err.code || err.message);
+        if (btn) btn.disabled = false;
+      }
+    });
 }
 
 function trySwitchAccount() {
