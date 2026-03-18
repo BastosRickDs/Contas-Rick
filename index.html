@@ -590,16 +590,15 @@ function initFirebase(cfg) {
 
 // ── INIT ──
 (function bootstrap() {
-  // Config pré-definida — Contas-Rick
-  const hardcodedCfg = {
+  // Credenciais fixas — Contas-Rick (não precisa configurar)
+  const cfg = {
     apiKey:      "AIzaSyAcf6SMN40fHiX2PozjFEqoxuXChNwnmD4",
     authDomain:  "contas-rick.firebaseapp.com",
     databaseURL: "https://contas-rick-default-rtdb.firebaseio.com",
     projectId:   "contas-rick"
   };
-  // Save so the settings screen also shows it
-  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(hardcodedCfg));
-  initFirebase(hardcodedCfg);
+  document.getElementById('cfgOverlay').style.display = 'none';
+  initFirebase(cfg);
 })();
 
 const fmt  = v => 'R$ '+v.toFixed(2).replace('.',',');
